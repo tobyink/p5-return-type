@@ -4,7 +4,7 @@
 
 =head1 PURPOSE
 
-Test that Return::Type compiles.
+Test that Return::Type works.
 
 =head1 AUTHOR
 
@@ -17,13 +17,13 @@ This software is copyright (c) 2013 by Toby Inkster.
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
-
 =cut
 
 use strict;
 use warnings;
 use Test::More;
 use Test::Fatal;
+
 use Types::Standard -types;
 
 use_ok('Return::Type');
@@ -31,26 +31,32 @@ use_ok('Return::Type');
 subtest "support for wantarray and caller" => sub
 {
 	my @caller;
-	my $wrapped = 'Return::Type'->wrap_sub( sub { @caller = (wantarray, caller) }, scalar => Any );
+	my $wrapped = 'Return::Type'->wrap_sub(
+		sub { @caller = (wantarray, caller) },
+		scalar => Any,
+	);
 
-#line 37 "01basic.t"
+#line 40 "01basic.t"
 	is(scalar($wrapped->()), 4, 'scalar context');
-	is_deeply(\@caller, [ !!0, 'main', '01basic.t', 37 ], 'scalar context');
+	is_deeply(\@caller, [ !!0, 'main', '01basic.t', 40 ], 'scalar context');
 
-#line 41 "01basic.t"
-	is_deeply([$wrapped->()], [ !!1, 'main', '01basic.t', 41 ], 'list context');
-	is_deeply(\@caller, [ !!1, 'main', '01basic.t', 41 ], 'list context');
+#line 44 "01basic.t"
+	is_deeply([$wrapped->()], [ !!1, 'main', '01basic.t', 44 ], 'list context');
+	is_deeply(\@caller, [ !!1, 'main', '01basic.t', 44 ], 'list context');
 
-#line 45 "01basic.t"
+#line 48 "01basic.t"
 	$wrapped->();
-	is_deeply(\@caller, [ undef, 'main', '01basic.t', 45 ], 'void context');
+	is_deeply(\@caller, [ undef, 'main', '01basic.t', 48 ], 'void context');
 	
 	done_testing;
 };
 
 subtest "type checks" => sub
 {
-	my $wrapped = 'Return::Type'->wrap_sub( sub { wantarray ? @_ : $_[0] }, scalar => Int );
+	my $wrapped = 'Return::Type'->wrap_sub(
+		sub { wantarray ? @_ : $_[0] },
+		scalar => Int,
+	);
 	
 	is(scalar($wrapped->(42,43,44)), 42, 'checked passing value, scalar context');
 	is_deeply([$wrapped->(42,43,44)], [42,43,44], 'checked passing value, list context');
@@ -75,7 +81,11 @@ subtest "type checks" => sub
 
 subtest "type checks - differing constraints for scalar/list context" => sub
 {
-	my $wrapped = 'Return::Type'->wrap_sub( sub { wantarray ? @_ : $_[0] }, scalar => Int, list => Tuple[HashRef,ArrayRef] );
+	my $wrapped = 'Return::Type'->wrap_sub(
+		sub { wantarray ? @_ : $_[0] },
+		scalar => Int,
+		list   => Tuple[HashRef,ArrayRef],
+	);
 	
 	is(scalar($wrapped->(42,43,44)), 42, 'checked passing value, scalar context');
 	is_deeply([$wrapped->({}, [])], [{}, []], 'checked passing value, list context');
@@ -95,18 +105,67 @@ subtest "type checks - differing constraints for scalar/list context" => sub
 
 subtest "hash context" => sub
 {
-	my $wrapped = 'Return::Type'->wrap_sub( sub { @_ }, scalar => Any, list => HashRef );
+	my $wrapped = 'Return::Type'->wrap_sub(
+		sub { @_ },
+		scalar => Any,
+		list   => HashRef,
+	);
 	
 	is_deeply(
 		[ $wrapped->(foo => 42) ],
 		[ foo => 42 ],
 		'called with even number of items',
 	);
-
+	
 	like(
 		exception { my @h = $wrapped->(foo => 42, 'bar') },
 		qr{^Odd number of elements in anonymous hash},
 		'called with odd number of items',
+	);
+};
+
+subtest "coercion" => sub
+{
+	my $wrapped = 'Return::Type'->wrap_sub(
+		sub { $_[0] },
+		scalar => Int->plus_coercions(Num, q[int($_)]),
+		coerce => 1,
+	);
+	
+	is(
+		$wrapped->(3),
+		3,
+		'value not needing coercion',
+	);
+	
+	is(
+		$wrapped->(5.3),
+		5,
+		'value needing coercion',
+	);
+	
+	like(
+		exception { my $v = $wrapped->("x") },
+		qr{^Value "x" did not pass type constraint "Int"},
+		'value that cannot be coerced',
+	);
+	
+	is_deeply(
+		[$wrapped->(3)],
+		[3],
+		'value not needing coercion - list context',
+	);
+	
+	is_deeply(
+		[$wrapped->(5.3)],
+		[5],
+		'value needing coercion - list context',
+	);
+	
+	like(
+		exception { my @v = $wrapped->("x") },
+		qr{^Reference \["x"\] did not pass type constraint "ArrayRef\[Int\]"},
+		'value that cannot be coerced - list context',
 	);
 };
 

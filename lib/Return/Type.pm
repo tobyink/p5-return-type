@@ -12,7 +12,7 @@ use Scope::Upper qw( );
 use Types::Standard qw( ArrayRef HashRef );
 use Types::TypeTiny qw( to_TypeTiny );
 
-sub _inline_type
+sub _inline_type_check
 {
 	my $class = shift;
 	my ($type, $var, $env) = @_;
@@ -20,7 +20,26 @@ sub _inline_type
 	return $type->inline_assert($var) if $type->can_be_inlined;
 	
 	$env->{'$type'} = \$type;
-	return sprintf('$type->assert_return(%s)', $var);
+	return sprintf('$type->assert_return(%s);', $var);
+}
+
+sub _inline_type_coerce_and_check
+{
+	my $class = shift;
+	my ($type, $var, $env) = @_;
+	
+	my $coerce = '';
+	if ($type->has_coercion and $type->coercion->can_be_inlined)
+	{
+		$coerce = sprintf('%s = %s;', $var, $type->coercion->inline_coercion($var));
+	}
+	elsif ($type->has_coercion)
+	{
+		$env->{'$coercion'} = \( $type->coercion );
+		$coerce = sprintf('%s = $coercion->coerce(%s);', $var, $var);
+	}
+	
+	return $coerce . $class->_inline_type_check(@_);
 }
 
 sub wrap_sub
@@ -31,24 +50,25 @@ sub wrap_sub
 	
 	$_{$_}   &&= to_TypeTiny($_{$_}) for qw( list scalar );
 	$_{list} ||= ArrayRef[$_{scalar}];
-	
-	my %env = ( '$sub' => \$sub );
-	my @src = 'sub { my $wa = wantarray;';
-	
+		
+	my %env  = ( '$sub' => \$sub );
+	my @src  = 'sub { my $wa = wantarray;';
 	my $call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
+	
+	my $inline = $_{coerce} ? '_inline_type_coerce_and_check' : '_inline_type_check';
 	
 	# List context
 	push @src, 'if ($wa) {';
 	if ( $_{list}->is_a_type_of(HashRef) )
 	{
 		push @src, 'my $rv = do { use warnings FATAL => qw(misc); +{' . $call . '} };';
-		push @src, $class->_inline_type($_{list}, '$rv', \%env);
+		push @src, $class->$inline($_{list}, '$rv', \%env);
 		push @src, 'return %$rv;';
 	}
 	else
 	{
 		push @src, 'my $rv = [' . $call . '];';
-		push @src, $class->_inline_type($_{list}, '$rv', \%env);
+		push @src, $class->$inline($_{list}, '$rv', \%env);
 		push @src, 'return @$rv;';
 	}
 	push @src, '}';
@@ -56,7 +76,7 @@ sub wrap_sub
 	# Scalar context
 	push @src, 'elsif (defined $wa) {';
 	push @src, 'my $rv = ' . $call . ';';
-	push @src, $class->_inline_type($_{scalar}, '$rv', \%env);
+	push @src, $class->$inline($_{scalar}, '$rv', \%env);
 	push @src, 'return $rv;';
 	push @src, '}';
 	
