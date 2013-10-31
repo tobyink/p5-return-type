@@ -7,9 +7,12 @@ package Return::Type;
 our $AUTHORITY = 'cpan:TOBYINK';
 our $VERSION   = '0.001';
 
+use Attribute::Handlers;
 use Eval::TypeTiny qw( eval_closure );
 use Scope::Upper qw( );
-use Types::Standard qw( ArrayRef HashRef );
+use Sub::Identify qw( sub_fullname );
+use Sub::Name qw( subname );
+use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
 
 sub _inline_type_check
@@ -48,11 +51,15 @@ sub wrap_sub
 	my $sub   = $_[0];
 	local %_  = @_[ 1 .. $#_ ];
 	
-	$_{$_}   &&= to_TypeTiny($_{$_}) for qw( list scalar );
-	$_{list} ||= ArrayRef[$_{scalar}];
-		
+	$_{$_}     &&= to_TypeTiny($_{$_}) for qw( list scalar );
+	$_{scalar} ||= Any;
+	$_{list}   ||= ($_{scalar} == Any ? Any : ArrayRef[$_{scalar}]);
+	
+	my $prototype = prototype($sub);
+	$prototype = defined($prototype) ? "($prototype)" : "";
+	
 	my %env  = ( '$sub' => \$sub );
-	my @src  = 'sub { my $wa = wantarray;';
+	my @src  = sprintf('sub %s { my $wa = wantarray;', $prototype);
 	my $call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
 	
 	my $inline = $_{coerce} ? '_inline_type_coerce_and_check' : '_inline_type_check';
@@ -84,10 +91,21 @@ sub wrap_sub
 	push @src, 'goto $sub;';
 	
 	push @src, '}';
-	eval_closure(
+	
+	my $rv = eval_closure(
 		source       => \@src,
 		environment  => \%env,
 	);
+	return subname(sub_fullname($sub), $rv);
+}
+
+sub UNIVERSAL::ReturnType :ATTR(CODE)
+{
+	my ($package, $symbol, $referent, $attr, $data) = @_;
+	
+	no warnings qw(redefine);
+	my %args = (@$data % 2) ? (scalar => @$data) : @$data;
+	*$symbol = __PACKAGE__->wrap_sub($referent, %args);
 }
 
 1;
@@ -104,7 +122,73 @@ Return::Type - specify a return type for a function (optionally with coercion)
 
 =head1 SYNOPSIS
 
+   use Return::Type;
+   use Types::Standard qw(Int);
+   
+   sub first_item :ReturnType(Int) {
+      return $_[0];
+   }
+   
+   my $answer = first_item(42, 43, 44);     # returns 44
+   my $pie    = first_item(3.141592);       # throws an error!
+
 =head1 DESCRIPTION
+
+Return::Type allows you to specify a return type for your subs. Type
+constraints from any L<Type::Tiny>, L<MooseX::Types> or L<MouseX::Types>
+type library are supported.
+
+The simple syntax for specifying a type constraint is shown in the
+L</SYNOPSIS>. If the attibute is passed a single type constraint as shown,
+this will be applied to the return value if called in scalar context, and
+to each item in the returned list if called in list context. (If the sub
+is called in void context, type constraints are simply ignored.)
+
+It is possible to specify different type constraints for scalar and
+list context:
+
+   sub foo :ReturnType(scalar => Int, list => HashRef[Num]) {
+      if (wantarray) {
+         return (pie => 3.141592);
+      }
+      else {
+         return 42;
+      }
+   }
+
+Note that because type constraint libraries are really aimed at
+validating scalars, the type constraint for the list is specified as
+a I<hashref> of numbers and not a hash of numbers! For the purposes
+of validation against the type constraint, we slurp the returned list
+into a temporary arrayref or hashref.
+
+For type constraints with coercions, you can also pass the option
+C<< coerce => 1 >>:
+
+   use Return::Type;
+   use Types::Standard qw( Int Num );
+   
+   my $Rounded;
+   BEGIN {
+      $Rounded = Int->plus_coercions(Num, sub { int($_) });
+   }
+   
+   sub first_item :ReturnType(scalar => $Rounded, coerce => 1) {
+      return $_[0];
+   }
+   
+   my $answer = first_item(42, 43, 44);     # returns 44
+   my $pie    = first_item(3.141592);       # returns 3
+
+=head2 Power-user Inferface
+
+Rather than using the C<< :ReturnType >> attribute, it's possible to
+wrap a coderef like this:
+
+   my $wrapped = Return::Type->wrap_sub($orig, %options);
+
+The accepted options are C<scalar>, C<list> and C<coerce>, as per the
+attribute-based interface.
 
 =head1 BUGS
 
@@ -112,6 +196,10 @@ Please report any bugs to
 L<http://rt.cpan.org/Dist/Display.html?Queue=Return-Type>.
 
 =head1 SEE ALSO
+
+L<Attribute::Contract>,
+L<Sub::Filter>,
+L<Sub::Contract>.
 
 =head1 AUTHOR
 
@@ -123,7 +211,6 @@ This software is copyright (c) 2013 by Toby Inkster.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
-
 
 =head1 DISCLAIMER OF WARRANTIES
 
