@@ -31,7 +31,7 @@ use_ok('Return::Type');
 subtest "support for wantarray and caller" => sub
 {
 	my @caller;
-	my $wrapped = 'Return::Type'->wrap_sub( sub { @caller = (wantarray, caller) }, Any );
+	my $wrapped = 'Return::Type'->wrap_sub( sub { @caller = (wantarray, caller) }, scalar => Any );
 
 #line 37 "01basic.t"
 	is(scalar($wrapped->()), 4, 'scalar context');
@@ -50,7 +50,7 @@ subtest "support for wantarray and caller" => sub
 
 subtest "type checks" => sub
 {
-	my $wrapped = 'Return::Type'->wrap_sub( sub { wantarray ? @_ : $_[0] }, Int );
+	my $wrapped = 'Return::Type'->wrap_sub( sub { wantarray ? @_ : $_[0] }, scalar => Int );
 	
 	is(scalar($wrapped->(42,43,44)), 42, 'checked passing value, scalar context');
 	is_deeply([$wrapped->(42,43,44)], [42,43,44], 'checked passing value, list context');
@@ -75,7 +75,7 @@ subtest "type checks" => sub
 
 subtest "type checks - differing constraints for scalar/list context" => sub
 {
-	my $wrapped = 'Return::Type'->wrap_sub( sub { wantarray ? @_ : $_[0] }, Int, Tuple[HashRef,ArrayRef] );
+	my $wrapped = 'Return::Type'->wrap_sub( sub { wantarray ? @_ : $_[0] }, scalar => Int, list => Tuple[HashRef,ArrayRef] );
 	
 	is(scalar($wrapped->(42,43,44)), 42, 'checked passing value, scalar context');
 	is_deeply([$wrapped->({}, [])], [{}, []], 'checked passing value, list context');
@@ -95,7 +95,7 @@ subtest "type checks - differing constraints for scalar/list context" => sub
 
 subtest "hash context" => sub
 {
-	my $wrapped = 'Return::Type'->wrap_sub( sub { @_ }, Any, HashRef );
+	my $wrapped = 'Return::Type'->wrap_sub( sub { @_ }, scalar => Any, list => HashRef );
 	
 	is_deeply(
 		[ $wrapped->(foo => 42) ],

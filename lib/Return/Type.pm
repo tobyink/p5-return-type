@@ -26,9 +26,11 @@ sub _inline_type
 sub wrap_sub
 {
 	my $class = shift;
-	my $sub = $_[0];
-	my ($scalar, $list) = map to_TypeTiny($_), grep defined($_), @_[1..2];
-	$list = ArrayRef[$scalar] unless defined $list;
+	my $sub   = $_[0];
+	local %_  = @_[ 1 .. $#_ ];
+	
+	$_{$_}   &&= to_TypeTiny($_{$_}) for qw( list scalar );
+	$_{list} ||= ArrayRef[$_{scalar}];
 	
 	my %env = ( '$sub' => \$sub );
 	my @src = 'sub { my $wa = wantarray;';
@@ -37,16 +39,16 @@ sub wrap_sub
 	
 	# List context
 	push @src, 'if ($wa) {';
-	if ( $list->is_a_type_of(HashRef) )
+	if ( $_{list}->is_a_type_of(HashRef) )
 	{
 		push @src, 'my $rv = do { use warnings FATAL => qw(misc); +{' . $call . '} };';
-		push @src, $class->_inline_type($list, '$rv', \%env);
+		push @src, $class->_inline_type($_{list}, '$rv', \%env);
 		push @src, 'return %$rv;';
 	}
 	else
 	{
 		push @src, 'my $rv = [' . $call . '];';
-		push @src, $class->_inline_type($list, '$rv', \%env);
+		push @src, $class->_inline_type($_{list}, '$rv', \%env);
 		push @src, 'return @$rv;';
 	}
 	push @src, '}';
@@ -54,7 +56,7 @@ sub wrap_sub
 	# Scalar context
 	push @src, 'elsif (defined $wa) {';
 	push @src, 'my $rv = ' . $call . ';';
-	push @src, $class->_inline_type($scalar, '$rv', \%env);
+	push @src, $class->_inline_type($_{scalar}, '$rv', \%env);
 	push @src, 'return $rv;';
 	push @src, '}';
 	
