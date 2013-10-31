@@ -3,7 +3,14 @@
 @prefix : <http://ontologi.es/doap-deps#>.
 
 `Return-Type`
+	:runtime-requirement    [ :on "Eval::TypeTiny"^^:CpanId ];
+	:runtime-requirement    [ :on "Scope::Upper"^^:CpanId ];
+	:runtime-requirement    [ :on "Sub::Identify"^^:CpanId ];
+	:runtime-requirement    [ :on "Sub::Name"^^:CpanId ];
+	:runtime-requirement    [ :on "Types::Standard"^^:CpanId ];
+	:runtime-requirement    [ :on "Types::TypeTiny"^^:CpanId ];
+	:runtime-requirement    [ :on "perl 5.008"^^:CpanId ];
+	:test-requirement       [ :on "Test::Fatal"^^:CpanId ];
 	:test-requirement       [ :on "Test::More 0.96"^^:CpanId ];
 	:develop-recommendation [ :on "Dist::Inkt 0.001"^^:CpanId ];
 	.
-
