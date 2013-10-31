@@ -168,12 +168,11 @@ C<< coerce => 1 >>:
    use Return::Type;
    use Types::Standard qw( Int Num );
    
-   my $Rounded;
-   BEGIN {
-      $Rounded = Int->plus_coercions(Num, sub { int($_) });
-   }
+   # Define a subtype of "Int" at compile time, which can
+   # coerce from "Num" by rounding to nearest integer.
+   use constant Rounded => Int->plus_coercions(Num, sub { int($_) });
    
-   sub first_item :ReturnType(scalar => $Rounded, coerce => 1) {
+   sub first_item :ReturnType(scalar => Rounded, coerce => 1) {
       return $_[0];
    }
    
