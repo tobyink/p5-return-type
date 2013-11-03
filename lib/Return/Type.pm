@@ -62,20 +62,22 @@ sub wrap_sub
 	my @src  = sprintf('sub %s { my $wa = wantarray;', $prototype);
 	my $call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
 	
-	my $inline = $_{coerce} ? '_inline_type_coerce_and_check' : '_inline_type_check';
+	exists($_{$_}) || ($_{$_} = $_{coerce}) for qw( coerce_list coerce_scalar );
+	my $inline_list   = $_{coerce_list}   ? '_inline_type_coerce_and_check' : '_inline_type_check';
+	my $inline_scalar = $_{coerce_scalar} ? '_inline_type_coerce_and_check' : '_inline_type_check';
 		
 	# List context
 	push @src, 'if ($wa) {';
 	if ( $_{list}->is_a_type_of(HashRef) )
 	{
 		push @src, 'my $rv = do { use warnings FATAL => qw(misc); +{' . $call . '} };';
-		push @src, $class->$inline($_{list}, '$rv', \%env, 'l');
+		push @src, $class->$inline_list($_{list}, '$rv', \%env, 'l');
 		push @src, 'return %$rv;';
 	}
 	else
 	{
 		push @src, 'my $rv = [' . $call . '];';
-		push @src, $class->$inline($_{list}, '$rv', \%env, 'l');
+		push @src, $class->$inline_list($_{list}, '$rv', \%env, 'l');
 		push @src, 'return @$rv;';
 	}
 	push @src, '}';
@@ -83,7 +85,7 @@ sub wrap_sub
 	# Scalar context
 	push @src, 'elsif (defined $wa) {';
 	push @src, 'my $rv = ' . $call . ';';
-	push @src, $class->$inline($_{scalar}, '$rv', \%env, 's');
+	push @src, $class->$inline_scalar($_{scalar}, '$rv', \%env, 's');
 	push @src, 'return $rv;';
 	push @src, '}';
 	
@@ -179,6 +181,9 @@ C<< coerce => 1 >>:
    my $answer = first_item(42, 43, 44);     # returns 44
    my $pie    = first_item(3.141592);       # returns 3
 
+The options C<coerce_scalar> and C<coerce_list> are also available if
+you wish to enable coercion only in particular contexts.
+
 =head2 Power-user Inferface
 
 Rather than using the C<< :ReturnType >> attribute, it's possible to
@@ -186,8 +191,8 @@ wrap a coderef like this:
 
    my $wrapped = Return::Type->wrap_sub($orig, %options);
 
-The accepted options are C<scalar>, C<list> and C<coerce>, as per the
-attribute-based interface.
+The accepted options are C<scalar>, C<list>, C<coerce>, C<coerce_list>,
+and C<coerce_scalar>, as per the attribute-based interface.
 
 =begin trustme
 
