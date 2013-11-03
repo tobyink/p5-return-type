@@ -5,7 +5,7 @@ use warnings;
 package Return::Type;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.001';
+our $VERSION   = '0.002';
 
 use Attribute::Handlers;
 use Eval::TypeTiny qw( eval_closure );

@@ -4,3 +4,9 @@
 	issued  2013-10-30;
 	label   "Initial release".
 
+`Return-Type 0.002 cpan:TOBYINK`
+	issued  2013-11-03;
+	changeset [
+		item "Fix non-inlineble type constraints and coercions."^^Bugfix;
+		item "Allow per-context (i.e. different for scalar and list contexts) control over coercion."^^Change;
+	].
