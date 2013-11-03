@@ -18,18 +18,18 @@ use Types::TypeTiny qw( to_TypeTiny );
 sub _inline_type_check
 {
 	my $class = shift;
-	my ($type, $var, $env) = @_;
+	my ($type, $var, $env, $suffix) = @_;
 	
 	return $type->inline_assert($var) if $type->can_be_inlined;
 	
-	$env->{'$type'} = \$type;
-	return sprintf('$type->assert_return(%s);', $var);
+	$env->{'$type_'.$suffix} = \$type;
+	return sprintf('$type_%s->assert_return(%s);', $suffix, $var);
 }
 
 sub _inline_type_coerce_and_check
 {
 	my $class = shift;
-	my ($type, $var, $env) = @_;
+	my ($type, $var, $env, $suffix) = @_;
 	
 	my $coerce = '';
 	if ($type->has_coercion and $type->coercion->can_be_inlined)
@@ -38,8 +38,8 @@ sub _inline_type_coerce_and_check
 	}
 	elsif ($type->has_coercion)
 	{
-		$env->{'$coercion'} = \( $type->coercion );
-		$coerce = sprintf('%s = $coercion->coerce(%s);', $var, $var);
+		$env->{'$coercion_'.$suffix} = \( $type->coercion );
+		$coerce = sprintf('%s = $coercion_%s->coerce(%s);', $var, $suffix, $var);
 	}
 	
 	return $coerce . $class->_inline_type_check(@_);
@@ -63,19 +63,19 @@ sub wrap_sub
 	my $call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
 	
 	my $inline = $_{coerce} ? '_inline_type_coerce_and_check' : '_inline_type_check';
-	
+		
 	# List context
 	push @src, 'if ($wa) {';
 	if ( $_{list}->is_a_type_of(HashRef) )
 	{
 		push @src, 'my $rv = do { use warnings FATAL => qw(misc); +{' . $call . '} };';
-		push @src, $class->$inline($_{list}, '$rv', \%env);
+		push @src, $class->$inline($_{list}, '$rv', \%env, 'l');
 		push @src, 'return %$rv;';
 	}
 	else
 	{
 		push @src, 'my $rv = [' . $call . '];';
-		push @src, $class->$inline($_{list}, '$rv', \%env);
+		push @src, $class->$inline($_{list}, '$rv', \%env, 'l');
 		push @src, 'return @$rv;';
 	}
 	push @src, '}';
@@ -83,7 +83,7 @@ sub wrap_sub
 	# Scalar context
 	push @src, 'elsif (defined $wa) {';
 	push @src, 'my $rv = ' . $call . ';';
-	push @src, $class->$inline($_{scalar}, '$rv', \%env);
+	push @src, $class->$inline($_{scalar}, '$rv', \%env, 's');
 	push @src, 'return $rv;';
 	push @src, '}';
 	
@@ -139,7 +139,7 @@ constraints from any L<Type::Tiny>, L<MooseX::Types> or L<MouseX::Types>
 type library are supported.
 
 The simple syntax for specifying a type constraint is shown in the
-L</SYNOPSIS>. If the attibute is passed a single type constraint as shown,
+L</SYNOPSIS>. If the attribute is passed a single type constraint as shown,
 this will be applied to the return value if called in scalar context, and
 to each item in the returned list if called in list context. (If the sub
 is called in void context, type constraints are simply ignored.)
@@ -188,6 +188,12 @@ wrap a coderef like this:
 
 The accepted options are C<scalar>, C<list> and C<coerce>, as per the
 attribute-based interface.
+
+=begin trustme
+
+=item wrap_sub
+
+=end trustme
 
 =head1 BUGS
 
