@@ -131,7 +131,7 @@ Return::Type - specify a return type for a function (optionally with coercion)
       return $_[0];
    }
    
-   my $answer = first_item(42, 43, 44);     # returns 44
+   my $answer = first_item(42, 43, 44);     # returns 42
    my $pie    = first_item(3.141592);       # throws an error!
 
 =head1 DESCRIPTION
@@ -178,7 +178,7 @@ C<< coerce => 1 >>:
       return $_[0];
    }
    
-   my $answer = first_item(42, 43, 44);     # returns 44
+   my $answer = first_item(42, 43, 44);     # returns 42
    my $pie    = first_item(3.141592);       # returns 3
 
 The options C<coerce_scalar> and C<coerce_list> are also available if
