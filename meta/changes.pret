@@ -10,3 +10,9 @@
 		item "Fix non-inlineble type constraints and coercions."^^Bugfix;
 		item "Allow per-context (i.e. different for scalar and list contexts) control over coercion."^^Change;
 	].
+
+`Return-Type 0.003 cpan:TOBYINK`
+	issued  2013-11-14;
+	changeset [
+		item "Fix typo in SYNOPSIS code."^^Documentation;
+	].
