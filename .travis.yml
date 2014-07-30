@@ -10,6 +10,12 @@ perl:
   - "5.16"
   - "5.18"
   - "5.20"
+matrix:
+  include:
+    - perl: "5.20"
+      env: GH_NAME=tobyink GH_EMAIL=tobyink+autobot@cpan.org
+      secure: "xTtZTBL71fNo1WT+V1ex8Jw+32v4mCpsnlSr/Pmb2kZd86QTbmkusaK4O0isj8Vp88rh8/ljUczvrd1dtee4IxevakqbCGWMWnpCPyr+YTy6vpwiQ/cE6fasVexb7JfbpYfgXsKBz/D3Ua08Bc8vov2VvLZ75MRKBixd1G6tojw="
+      after_success: perl devel.scripts/benchmark-to-github.pl
 notifications:
   irc:
     channels:
