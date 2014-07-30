@@ -9,18 +9,21 @@ perl:
   - "5.20"
 env:
   global:
+    - GH_NAME=tobyink
+    - GH_EMAIL=tobyink+autobot@cpan.org
     - secure: "qItYo2LGgq5cKJhaxAo6WqjY2uu/9lIKvKa4JXhCC+hYWMw3RLZH1gu12eRokObHZ4iD+7f2ZObpxzz8uQOvePiFWvXKbMRlCERvaxYwqdPDRvnhkJapJ9yZpsVc2OBs8w+LuHo/9dJi4LPB7YnLJl+30wTEYC44tjIKbHvgq/w="
 install:
-  - cpanm "Eval::TypeTiny" "Sub::Identify" "Sub::Name" "Test::Fatal" "Test::More" "Types::Standard" "Types::TypeTiny"
-script: HARNESS_IS_VERBOSE=1 prove -Iinc -Ilib t
+  - cpanm "Eval::TypeTiny" "Sub::Identify" "Sub::Name" "Types::Standard" "Types::TypeTiny"
+  - cpanm "Test::Fatal" "Test::More"
+  - cpanm "http://cpan.metacpan.org/authors/id/T/TO/TOBYINK/Benchmark-Report-GitHub-0.001.tar.gz"
+script:
+  - HARNESS_IS_VERBOSE=1 prove -Iinc -Ilib t
 matrix:
   include:
     - perl: "5.20"
       env: BENCHMARKING=1
       after_success:
-        - export GH_NAME=tobyink
-        - export GH_EMAIL=tobyink+autobot@cpan.org
-        - perl -Ilib devel.scripts/benchmark-to-github.pl
+        - perl -Ilib t/benchmarks.pl
 notifications:
   irc:
     channels:
