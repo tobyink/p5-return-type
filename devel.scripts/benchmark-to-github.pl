@@ -70,7 +70,7 @@ BEGIN {
 		RESULTS: {
 			open my $fh, ">", "$project.wiki/$page.md";
 			print $fh "# $title\n\n";
-			print $fh "[Build log](https://travis-ci.org/$owner/$project/builds/$job_id).\n\n";
+			print $fh "[Build log](https://travis-ci.org/$owner/$project/jobs/$job_id).\n\n";
 			my $old = select($fh);
 			while (@benchmarks) {
 				my ($name, $times, $cases) = splice(@benchmarks, 0, 3);
