@@ -7,7 +7,9 @@ perl:
   - "5.16"
   - "5.18"
   - "5.20"
-secure: "qItYo2LGgq5cKJhaxAo6WqjY2uu/9lIKvKa4JXhCC+hYWMw3RLZH1gu12eRokObHZ4iD+7f2ZObpxzz8uQOvePiFWvXKbMRlCERvaxYwqdPDRvnhkJapJ9yZpsVc2OBs8w+LuHo/9dJi4LPB7YnLJl+30wTEYC44tjIKbHvgq/w="
+env:
+  global:
+    - secure: "qItYo2LGgq5cKJhaxAo6WqjY2uu/9lIKvKa4JXhCC+hYWMw3RLZH1gu12eRokObHZ4iD+7f2ZObpxzz8uQOvePiFWvXKbMRlCERvaxYwqdPDRvnhkJapJ9yZpsVc2OBs8w+LuHo/9dJi4LPB7YnLJl+30wTEYC44tjIKbHvgq/w="
 install:
   - cpanm "Eval::TypeTiny" "Sub::Identify" "Sub::Name" "Test::Fatal" "Test::More" "Types::Standard" "Types::TypeTiny"
 script: HARNESS_IS_VERBOSE=1 prove -Iinc -Ilib t
