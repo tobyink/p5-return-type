@@ -16,3 +16,10 @@
 	changeset [
 		item "Fix typo in SYNOPSIS code."^^Documentation;
 	].
+
+`Return-Type 0.004 cpan:TOBYINK`
+	issued  2014-07-30;
+	changeset [
+		item "Make the Scope::Upper stuff optional, and disabled by default."^^Change;
+		item "No longer require Scope::Upper."^^Packaging;
+	].
