@@ -5,11 +5,14 @@ use strict;
 use warnings;
 
 BEGIN {
-	die "correct environment variables are not set"
-		unless $ENV{TRAVIS_REPO_SLUG}
-		and    $ENV{GH_NAME}
-		and    $ENV{GH_EMAIL}
-		and    $ENV{GH_TOKEN};
+	my $missing = 0;
+	for my $var (qw/ TRAVIS_REPO_SLUG GH_NAME GH_EMAIL GH_TOKEN /) {
+		next if defined $ENV{$var};
+		warn "missing: $var\n";
+		$missing++;
+	}
+	die "correct environment variables are not set; bailing out"
+		if $missing;
 };
 
 #################### ACTUAL STUFF WE WANT TO BENCHMARK ####################
