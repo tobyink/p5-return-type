@@ -33,8 +33,17 @@ sub foo :ReturnType(Rounded, coerce => 1) {
 	$_[0];
 }
 
-is( foo(4), 4 );
-is( foo(3.1), 3 );
+is( scalar foo(4), 4 );
+is( scalar foo(3.1), 3 );
 ok exception { my $x = foo("x") };
+
+if (0)
+#for ('foo')
+{
+	require B::Deparse;
+	note( "Deparsed '$_':" );
+	my $ref = __PACKAGE__->can($_);
+	note( B::Deparse->new->coderef2text($ref) );
+}
 
 done_testing;

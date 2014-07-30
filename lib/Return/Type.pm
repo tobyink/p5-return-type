@@ -9,7 +9,6 @@ our $VERSION   = '0.003';
 
 use Attribute::Handlers;
 use Eval::TypeTiny qw( eval_closure );
-use Scope::Upper qw( );
 use Sub::Identify qw( sub_fullname );
 use Sub::Name qw( subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
@@ -60,7 +59,13 @@ sub wrap_sub
 	
 	my %env  = ( '$sub' => \$sub );
 	my @src  = sprintf('sub %s { my $wa = wantarray;', $prototype);
-	my $call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
+	my $call = '$sub->(@_)';
+	
+	if ($_{scope_upper})
+	{
+		require Scope::Upper;
+		$call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
+	}
 	
 	exists($_{$_}) || ($_{$_} = $_{coerce}) for qw( coerce_list coerce_scalar );
 	my $inline_list   = $_{coerce_list}   ? '_inline_type_coerce_and_check' : '_inline_type_check';
@@ -90,7 +95,7 @@ sub wrap_sub
 	push @src, '}';
 	
 	# Void context - cannot request a value to check, so check must be skipped
-	push @src, 'goto $sub;';
+	push @src, "$call;";
 	
 	push @src, '}';
 	
@@ -193,6 +198,12 @@ wrap a coderef like this:
 
 The accepted options are C<scalar>, C<list>, C<coerce>, C<coerce_list>,
 and C<coerce_scalar>, as per the attribute-based interface.
+
+There is an additional option C<scope_upper> which will load and use
+L<Scope::Upper> so that things like C<caller> used within the wrapped
+sub are unaware of being wrapped. This behaviour was the default
+prior to Return::Type 0.004, but is now optional and disabled by
+default.
 
 =begin trustme
 

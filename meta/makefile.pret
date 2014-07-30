@@ -4,7 +4,7 @@
 
 `Return-Type`
 	:runtime-requirement    [ :on "Eval::TypeTiny"^^:CpanId ];
-	:runtime-requirement    [ :on "Scope::Upper"^^:CpanId ];
+	:runtime-suggestion     [ :on "Scope::Upper"^^:CpanId ];
 	:runtime-requirement    [ :on "Sub::Identify"^^:CpanId ];
 	:runtime-requirement    [ :on "Sub::Name"^^:CpanId ];
 	:runtime-requirement    [ :on "Types::Standard"^^:CpanId ];

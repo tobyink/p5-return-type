@@ -32,7 +32,7 @@ subtest "support for wantarray and caller" => sub
 {
 	my @caller;
 	my $wrapped = 'Return::Type'->wrap_sub(
-		sub { @caller = (wantarray, caller) },
+		sub { @caller = (wantarray, (caller(1))[0..2]) },
 		scalar => Any,
 	);
 
