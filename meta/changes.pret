@@ -23,3 +23,9 @@
 		item "Make the Scope::Upper stuff optional, and disabled by default."^^Change;
 		item "No longer require Scope::Upper."^^Packaging;
 	].
+
+`Return-Type 0.005 cpan:TOBYINK`
+	issued  2014-09-07;
+	changeset [
+		item "Replace uses of Sub::Name+Sub::Identify with Sub::Util, which is expected to be a core module soon."^^Update;
+	].
