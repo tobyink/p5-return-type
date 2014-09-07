@@ -9,8 +9,7 @@ our $VERSION   = '0.004';
 
 use Attribute::Handlers;
 use Eval::TypeTiny qw( eval_closure );
-use Sub::Identify qw( sub_fullname );
-use Sub::Name qw( subname );
+use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
 
@@ -103,7 +102,7 @@ sub wrap_sub
 		source       => \@src,
 		environment  => \%env,
 	);
-	return subname(sub_fullname($sub), $rv);
+	return set_subname(subname($sub), $rv);
 }
 
 sub UNIVERSAL::ReturnType :ATTR(CODE)
