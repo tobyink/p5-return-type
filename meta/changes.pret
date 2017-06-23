@@ -29,3 +29,9 @@
 	changeset [
 		item "Replace uses of Sub::Name+Sub::Identify with Sub::Util, which is expected to be a core module soon."^^Update;
 	].
+
+`Return-Type 0.006 cpan:TOBYINK`
+	issued  2017-06-23;
+	changeset [
+		item ":ReturnType(Void) shortcut."^^Addition;
+	].
