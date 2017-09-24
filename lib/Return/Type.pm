@@ -13,6 +13,15 @@ use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
 
+my %package2attributes;
+sub import {
+	my $class = shift;
+	return unless @_;
+	my $caller = caller;
+	return unless $caller;
+	$package2attributes{$caller} = { @_ };
+}
+
 sub _inline_type_check
 {
 	my $class = shift;
@@ -111,6 +120,7 @@ sub UNIVERSAL::ReturnType :ATTR(CODE)
 	
 	no warnings qw(redefine);
 	my %args = (@$data % 2) ? (scalar => @$data) : @$data;
+	(%args) = (%args, %{ $package2attributes{$package} || {} });
 	*$symbol = __PACKAGE__->wrap_sub($referent, %args);
 }
 
@@ -187,6 +197,16 @@ C<< coerce => 1 >>:
 
 The options C<coerce_scalar> and C<coerce_list> are also available if
 you wish to enable coercion only in particular contexts.
+
+To turn these on for all C<:ReturnType> in the current package, use this:
+
+   use Return::Type coerce => 1;
+   # ...
+   sub first_item :ReturnType(scalar => Rounded) {
+      return $_[0];
+   }
+
+This will function the same as the above declaration.
 
 =head2 Power-user Inferface
 
