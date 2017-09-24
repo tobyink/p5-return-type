@@ -72,7 +72,7 @@ sub wrap_sub
 	if ($_{scope_upper})
 	{
 		require Scope::Upper;
-		$call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB(&Scope::Upper::SUB))';
+		$call = '&Scope::Upper::uplevel($sub => (@_) => &Scope::Upper::SUB())';
 	}
 	
 	exists($_{$_}) || ($_{$_} = $_{coerce}) for qw( coerce_list coerce_scalar );

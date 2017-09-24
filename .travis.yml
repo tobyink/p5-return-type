@@ -17,7 +17,7 @@ env:
     - secure: "qItYo2LGgq5cKJhaxAo6WqjY2uu/9lIKvKa4JXhCC+hYWMw3RLZH1gu12eRokObHZ4iD+7f2ZObpxzz8uQOvePiFWvXKbMRlCERvaxYwqdPDRvnhkJapJ9yZpsVc2OBs8w+LuHo/9dJi4LPB7YnLJl+30wTEYC44tjIKbHvgq/w="
 install:
   # force and the || true are so will continue build even on Perl <5.14
-  - cpanm --force "Eval::TypeTiny" "Sub::Util" "Types::Standard" "Types::TypeTiny" "Function::Parameters" || true
+  - cpanm --force "Eval::TypeTiny" "Sub::Util" "Types::Standard" "Types::TypeTiny" "Function::Parameters" "Scope::Upper" || true
   - cpanm "Test::Fatal" "Test::More"
   - cpanm "http://cpan.metacpan.org/authors/id/T/TO/TOBYINK/Benchmark-Report-GitHub-0.001.tar.gz"
 script:
