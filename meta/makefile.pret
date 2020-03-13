@@ -8,6 +8,7 @@
 	:runtime-requirement    [ :on "Sub::Util"^^:CpanId ];
 	:runtime-requirement    [ :on "Types::Standard"^^:CpanId ];
 	:runtime-requirement    [ :on "Types::TypeTiny"^^:CpanId ];
+	:runtime-requirement    [ :on "parent"^^:CpanId ];
 	:runtime-requirement    [ :on "perl 5.008"^^:CpanId ];
 	:test-requirement       [ :on "Test::Fatal"^^:CpanId ];
 	:test-requirement       [ :on "Test::More 0.96"^^:CpanId ];

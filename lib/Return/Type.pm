@@ -7,11 +7,34 @@ package Return::Type;
 our $AUTHORITY = 'cpan:TOBYINK';
 our $VERSION   = '0.005';
 
-use Attribute::Handlers;
+use Attribute::Handlers 0.70;
 use Eval::TypeTiny qw( eval_closure );
 use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
+
+my $USER_LEVEL;
+sub _find_user_package_level {
+	return $USER_LEVEL if defined $USER_LEVEL;
+
+	for (my $i = 2; $i < 10; ++$i) {
+		my ($package) = caller($i);
+		last if !$package;
+		next if $package eq 'attributes' || $package =~ /^Attribute::Handlers/;
+
+		return $USER_LEVEL = $i - 1;    # ignore current frame
+	}
+
+	return $USER_LEVEL = 0;
+}
+
+sub _in_effect {
+	my $level     = _find_user_package_level() or return 1;
+	my $hinthash  = (caller($level))[10];
+	my $in_effect = $hinthash->{'Return::Type::Lexical/in_effect'};
+
+	return !defined $in_effect || $in_effect;
+}
 
 sub _inline_type_check
 {
@@ -105,8 +128,10 @@ sub wrap_sub
 	return set_subname(subname($sub), $rv);
 }
 
-sub UNIVERSAL::ReturnType :ATTR(CODE)
+sub UNIVERSAL::ReturnType :ATTR(CODE,BEGIN)
 {
+	return if !_in_effect();
+
 	my ($package, $symbol, $referent, $attr, $data) = @_;
 	
 	no warnings qw(redefine);

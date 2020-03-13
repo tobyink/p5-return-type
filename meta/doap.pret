@@ -12,7 +12,8 @@
 	:created              2013-10-30;
 	:license              <http://dev.perl.org/licenses/>;
 	:maintainer           cpan:TOBYINK;
-	:developer            cpan:TOBYINK.
+	:developer            cpan:TOBYINK;
+	:developer            cpan:CCM.
 
 <http://dev.perl.org/licenses/>
 	dc:title  "the same terms as the perl 5 programming language system itself".
