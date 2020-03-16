@@ -71,11 +71,6 @@ enable checking by setting the C<check> attribute option:
 
 See L<Return::Type/Options> for a more detailed explanation.
 
-=head1 METHODS
-
-The C<import> method supports the C<check> attribute to set whether or
-not types are checked.
-
 =head1 CAVEATS
 
 Disabling checks also disables coercions (if any).
