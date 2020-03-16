@@ -243,15 +243,48 @@ C<< coerce => 1 >>:
 The options C<coerce_scalar> and C<coerce_list> are also available if
 you wish to enable coercion only in particular contexts.
 
-To turn these on for all C<:ReturnType> in the current package, use this:
+=head2 Options
+
+The C<check>, C<coerce>, C<coerce_scalar>, and C<coerce_list> options
+can all be set for the whole package, lexically (see
+L<Return::Type::Lexical>) or per-subroutine using attribute options.
+
+For example, to enable coercion for an entire package:
 
    use Return::Type coerce => 1;
-   # ...
-   sub first_item :ReturnType(scalar => Rounded) {
-      return $_[0];
-   }
 
-This will function the same as the above declaration.
+Or you can use L<Devel::StrictMode> to only perform type checks in
+strict mode:
+
+   use Devel::StrictMode;
+   use Return::Type check => STRICT;
+
+If an option is set in multiple places, priority goes in this order:
+
+=over
+
+=item 1. Subroutine attribute
+
+=item 2. Lexical
+
+=item 3. Package
+
+=back
+
+In the following convoluted example, the return value of C<foo> will
+be coerced because even though coercion was disabled within the
+lexical scope in which the subroutine was defined (overriding the
+package setting), the subroutine attribute re-enabled coercion.
+
+   use Return::Type coerce => 1;
+
+   {
+      use Return::Type::Lexical coerce => 0;
+
+      sub foo :ReturnType(scalar => MyType, coerce => 1) {
+         ...
+      }
+   }
 
 =head2 Power-user Inferface
 

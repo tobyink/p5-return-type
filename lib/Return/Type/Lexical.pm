@@ -55,18 +55,21 @@ Return::Type::Lexical - same thing as Return::Type, but lexical
    my $bar = bar();    # returns "not an int"
    my $baz = baz();    # throws an error
 
-   # Can also be used with Devel::StrictMode to only perform
-   # type checks in strict mode:
-
-   use Devel::StrictMode;
-   use Return::Type::Lexical check => STRICT;
-
 =head1 DESCRIPTION
 
 This module works just like L<Return::Type>, but type-checking can be
 enabled and disabled within lexical scopes.
 
 There is no runtime penalty when type-checking is disabled.
+
+When type-checking is lexically disabled, individual subroutines can
+enable checking by setting the C<check> attribute option:
+
+   sub foo :ReturnType(scalar => Int, check => 1) {
+      ...
+   }
+
+See L<Return::Type/Options> for a more detailed explanation.
 
 =head1 METHODS
 
