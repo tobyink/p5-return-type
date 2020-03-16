@@ -7,11 +7,59 @@ package Return::Type;
 our $AUTHORITY = 'cpan:TOBYINK';
 our $VERSION   = '0.005';
 
-use Attribute::Handlers;
+use Attribute::Handlers 0.70;
 use Eval::TypeTiny qw( eval_closure );
 use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
+
+my %PACKAGE_CONFIG;
+sub import {
+	my $class = shift;
+	return if !@_;
+
+	my $package = caller or return;
+	$PACKAGE_CONFIG{$package} = {check => 1, @_};
+}
+
+sub unimport {
+	my $package = caller or return;
+	delete $PACKAGE_CONFIG{$package};
+}
+
+sub _user_caller {
+	for (my $i = 1; $i < 10; ++$i) {
+		my @caller = caller($i);
+		my $package = $caller[0];
+		last if !$package;
+		next if $package eq 'attributes' || $package =~ /^(?:Attribute::Handlers|Return::Type)/;
+
+		return wantarray ? @caller : $package;
+	}
+}
+
+sub _package_config {
+	my $package = shift;
+	defined $package or return {};
+
+	return $PACKAGE_CONFIG{$package} || {check => 1};
+}
+
+sub _lexical_config {
+	my $hinthash = shift;
+	defined $hinthash or return {};
+
+	my $check         = $hinthash->{'Return::Type::Lexical/check'};
+	my $coerce        = $hinthash->{'Return::Type::Lexical/coerce'};
+	my $coerce_list   = $hinthash->{'Return::Type::Lexical/coerce_list'};
+	my $coerce_scalar = $hinthash->{'Return::Type::Lexical/coerce_scalar'};
+	return {
+		defined $check         ? (check => $check) : (),
+		defined $coerce        ? (coerce => $coerce) : (),
+		defined $coerce_list   ? (coerce_list => $coerce_list) : (),
+		defined $coerce_scalar ? (coerce_scalar => $coerce_scalar) : (),
+	};
+}
 
 sub _inline_type_check
 {
@@ -49,6 +97,13 @@ sub wrap_sub
 	my $sub   = $_[0];
 	local %_  = @_[ 1 .. $#_ ];
 	
+	my @caller       = _user_caller();
+	my $package_args = _package_config($caller[0]);
+	my $lexical_args = _lexical_config($caller[10]);
+
+	%_ = (%$package_args, %$lexical_args, %_);
+	return $sub if !$_{check};
+
 	$_{$_}     &&= to_TypeTiny($_{$_}) for qw( list scalar );
 	$_{scalar} ||= Any;
 	$_{list}   ||= ($_{scalar} == Any ? Any : ArrayRef[$_{scalar}]);
@@ -105,7 +160,7 @@ sub wrap_sub
 	return set_subname(subname($sub), $rv);
 }
 
-sub UNIVERSAL::ReturnType :ATTR(CODE)
+sub UNIVERSAL::ReturnType :ATTR(CODE,BEGIN)
 {
 	my ($package, $symbol, $referent, $attr, $data) = @_;
 	
@@ -187,6 +242,49 @@ C<< coerce => 1 >>:
 
 The options C<coerce_scalar> and C<coerce_list> are also available if
 you wish to enable coercion only in particular contexts.
+
+=head2 Options
+
+The C<check>, C<coerce>, C<coerce_scalar>, and C<coerce_list> options
+can all be set for the whole package, lexically (see
+L<Return::Type::Lexical>) or per-subroutine using attribute options.
+
+For example, to enable coercion for an entire package:
+
+   use Return::Type coerce => 1;
+
+Or you can use L<Devel::StrictMode> to only perform type checks in
+strict mode:
+
+   use Devel::StrictMode;
+   use Return::Type check => STRICT;
+
+If an option is set in multiple places, priority goes in this order:
+
+=over
+
+=item 1. Subroutine attribute
+
+=item 2. Lexical
+
+=item 3. Package
+
+=back
+
+In the following convoluted example, the return value of C<foo> will
+be coerced because even though coercion was disabled within the
+lexical scope in which the subroutine was defined (overriding the
+package setting), the subroutine attribute re-enabled coercion.
+
+   use Return::Type coerce => 1;
+
+   {
+      use Return::Type::Lexical coerce => 0;
+
+      sub foo :ReturnType(scalar => MyType, coerce => 1) {
+         ...
+      }
+   }
 
 =head2 Power-user Inferface
 

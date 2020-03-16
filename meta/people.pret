@@ -7,3 +7,8 @@ cpan:TOBYINK
 	:page  <https://metacpan.org/author/TOBYINK>;
 	:mbox  <mailto:tobyink@cpan.org>.
 
+cpan:CCM
+	:name  "Charles McGarvey";
+	:page  <https://metacpan.org/author/CCM>;
+	:mbox  <mailto:ccm@cpan.org>.
+
