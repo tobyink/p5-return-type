@@ -31,6 +31,20 @@ sub _in_effect {
 	return !defined $in_effect || $in_effect;
 }
 
+sub _lexical_wrap_sub_args {
+	my $level     = _find_user_package_level() or return {};
+	my $hinthash  = (caller($level))[10];
+
+	my $coerce        = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce'};
+	my $coerce_list   = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce_list'};
+	my $coerce_scalar = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce_scalar'};
+	return {
+		defined $coerce        ? (coerce => $coerce) : (),
+		defined $coerce_list   ? (coerce_list => $coerce_list) : (),
+		defined $coerce_scalar ? (coerce_scalar => $coerce_scalar) : (),
+	};
+}
+
 sub _inline_type_check
 {
 	my $class = shift;
@@ -68,6 +82,9 @@ sub wrap_sub
 	local %_  = @_[ 1 .. $#_ ];
 	
 	return $sub if !_in_effect();
+
+	my $lexical_args = _lexical_wrap_sub_args();
+	%_ = (%$lexical_args, %_);
 
 	$_{$_}     &&= to_TypeTiny($_{$_}) for qw( list scalar );
 	$_{scalar} ||= Any;

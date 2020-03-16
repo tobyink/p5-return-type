@@ -23,7 +23,9 @@ use strict;
 use warnings;
 use Test::Fatal;
 use Test::More;
-use Types::Standard qw(Int);
+use Types::Standard qw(Int Num);
+
+use constant Int1 => Int->plus_coercions(Num, sub { int($_) });
 
 {
 	use Return::Type::Lexical;
@@ -89,7 +91,7 @@ like(
 	like(
 		exception { my $rt = $wrapped->() },
 		qr{^Value "not an int" did not pass type constraint},
-		'return type enforced when wrapping at runtime',
+		'runtime: return type enforced when wrapping',
 	);
 })->();
 
@@ -104,7 +106,22 @@ like(
 	is(
 		exception { my $rt = $wrapped->() },
 		undef,
-		'return type not enforced when wrapping at runtime',
+		'runtime: return type not enforced when wrapping',
+	);
+})->();
+
+(sub {
+	use Return::Type::Lexical check => 1, coerce => 1;
+
+	my $wrapped = Return::Type->wrap_sub(
+		sub { shift },
+		scalar => Int1,
+	);
+
+	is(
+		exception { my $rt = $wrapped->(3.141592) },
+		undef,
+		'coerced with a lexical coercion setting',
 	);
 })->();
 
