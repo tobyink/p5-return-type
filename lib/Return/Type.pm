@@ -13,19 +13,14 @@ use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
 
-my $USER_LEVEL;
 sub _find_user_package_level {
-	return $USER_LEVEL if defined $USER_LEVEL;
-
 	for (my $i = 2; $i < 10; ++$i) {
 		my ($package) = caller($i);
 		last if !$package;
 		next if $package eq 'attributes' || $package =~ /^Attribute::Handlers/;
 
-		return $USER_LEVEL = $i - 1;    # ignore current frame
+		return $i - 1;	# ignore current frame
 	}
-
-	return $USER_LEVEL = 0;
 }
 
 sub _in_effect {
@@ -72,6 +67,8 @@ sub wrap_sub
 	my $sub   = $_[0];
 	local %_  = @_[ 1 .. $#_ ];
 	
+	return $sub if !_in_effect();
+
 	$_{$_}     &&= to_TypeTiny($_{$_}) for qw( list scalar );
 	$_{scalar} ||= Any;
 	$_{list}   ||= ($_{scalar} == Any ? Any : ArrayRef[$_{scalar}]);

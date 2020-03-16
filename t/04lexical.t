@@ -78,4 +78,34 @@ like(
 	'return type enforced when using Return::Type directly in another package',
 );
 
+(sub {
+	use Return::Type::Lexical check => 1;
+
+	my $wrapped = Return::Type->wrap_sub(
+		sub { 'not an int' },
+		scalar => Int,
+	);
+
+	like(
+		exception { my $rt = $wrapped->() },
+		qr{^Value "not an int" did not pass type constraint},
+		'return type enforced when wrapping at runtime',
+	);
+})->();
+
+(sub {
+	use Return::Type::Lexical check => 0;
+
+	my $wrapped = Return::Type->wrap_sub(
+		sub { 'not an int' },
+		scalar => Int,
+	);
+
+	is(
+		exception { my $rt = $wrapped->() },
+		undef,
+		'return type not enforced when wrapping at runtime',
+	);
+})->();
+
 done_testing;
