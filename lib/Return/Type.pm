@@ -13,59 +13,48 @@ use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
 
-my %PACKAGE_WRAP_SUB_ARGS;
+my %PACKAGE_CONFIG;
 sub import {
 	my $class = shift;
 	return if !@_;
 
 	my $package = caller or return;
-	$PACKAGE_WRAP_SUB_ARGS{$package} = {@_};
+	$PACKAGE_CONFIG{$package} = {check => 1, @_};
 }
 
 sub unimport {
 	my $package = caller or return;
-	delete $PACKAGE_WRAP_SUB_ARGS{$package};
+	delete $PACKAGE_CONFIG{$package};
 }
 
-sub _find_user_package_level {
+sub _user_caller {
 	for (my $i = 1; $i < 10; ++$i) {
-		my ($package) = caller($i);
+		my @caller = caller($i);
+		my $package = $caller[0];
 		last if !$package;
 		next if $package eq 'attributes' || $package =~ /^(?:Attribute::Handlers|Return::Type)/;
 
-		return $i - 1;  # ignore current frame
+		return wantarray ? @caller : $package;
 	}
 }
 
-sub _lexical_check {
-	my $level = shift;
-	defined $level or return 1;
+sub _package_config {
+	my $package = shift;
+	defined $package or return {};
 
-	my $hinthash  = (caller($level + 1))[10];
-	my $check     = $hinthash->{'Return::Type::Lexical/check'};
-
-	return !defined $check || $check;
+	return $PACKAGE_CONFIG{$package} || {check => 1};
 }
 
-sub _package_wrap_sub_args {
-	my $level = shift;
-	defined $level or return {};
+sub _lexical_config {
+	my $hinthash = shift;
+	defined $hinthash or return {};
 
-	my $package = caller($level + 1);
-
-	return $PACKAGE_WRAP_SUB_ARGS{$package} || {};
-}
-
-sub _lexical_wrap_sub_args {
-	my $level = shift;
-	defined $level or return {};
-
-	my $hinthash  = (caller($level + 1))[10];
-
-	my $coerce        = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce'};
-	my $coerce_list   = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce_list'};
-	my $coerce_scalar = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce_scalar'};
+	my $check         = $hinthash->{'Return::Type::Lexical/check'};
+	my $coerce        = $hinthash->{'Return::Type::Lexical/coerce'};
+	my $coerce_list   = $hinthash->{'Return::Type::Lexical/coerce_list'};
+	my $coerce_scalar = $hinthash->{'Return::Type::Lexical/coerce_scalar'};
 	return {
+		defined $check         ? (check => $check) : (),
 		defined $coerce        ? (coerce => $coerce) : (),
 		defined $coerce_list   ? (coerce_list => $coerce_list) : (),
 		defined $coerce_scalar ? (coerce_scalar => $coerce_scalar) : (),
@@ -108,13 +97,12 @@ sub wrap_sub
 	my $sub   = $_[0];
 	local %_  = @_[ 1 .. $#_ ];
 	
-	my $level = _find_user_package_level();
+	my @caller       = _user_caller();
+	my $package_args = _package_config($caller[0]);
+	my $lexical_args = _lexical_config($caller[10]);
 
-	return $sub if !$_{check} && !_lexical_check($level);
-
-	my $package_args = _package_wrap_sub_args($level);
-	my $lexical_args = _lexical_wrap_sub_args($level);
 	%_ = (%$package_args, %$lexical_args, %_);
+	return $sub if !$_{check};
 
 	$_{$_}     &&= to_TypeTiny($_{$_}) for qw( list scalar );
 	$_{scalar} ||= Any;
@@ -178,11 +166,7 @@ sub UNIVERSAL::ReturnType :ATTR(CODE,BEGIN)
 	
 	no warnings qw(redefine);
 	my %args = (@$data % 2) ? (scalar => @$data) : @$data;
-
-	my $level = _find_user_package_level();
-	return if !$args{check} && !_lexical_check($level);
-
-	*$symbol = __PACKAGE__->wrap_sub($referent, %args, check => 1);
+	*$symbol = __PACKAGE__->wrap_sub($referent, %args);
 }
 
 1;

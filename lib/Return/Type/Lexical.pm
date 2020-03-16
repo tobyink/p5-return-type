@@ -14,16 +14,16 @@ sub import {
 	my (%args) = @_;
 
 	$^H{'Return::Type::Lexical/check'} = exists $args{check} && !$args{check} ? 0 : 1;
-	$^H{'Return::Type::Lexical/wrap_sub_args/coerce'} = $args{coerce} if defined $args{coerce};
-	$^H{'Return::Type::Lexical/wrap_sub_args/coerce_list'} = $args{coerce_list} if defined $args{coerce_list};
-	$^H{'Return::Type::Lexical/wrap_sub_args/coerce_scalar'} = $args{coerce_scalar} if defined $args{coerce_scalar};
+	$^H{'Return::Type::Lexical/coerce'} = $args{coerce} if defined $args{coerce};
+	$^H{'Return::Type::Lexical/coerce_list'} = $args{coerce_list} if defined $args{coerce_list};
+	$^H{'Return::Type::Lexical/coerce_scalar'} = $args{coerce_scalar} if defined $args{coerce_scalar};
 }
 
 sub unimport {
 	delete $^H{'Return::Type::Lexical/check'};
-	delete $^H{'Return::Type::Lexical/wrap_sub_args/coerce'};
-	delete $^H{'Return::Type::Lexical/wrap_sub_args/coerce_list'};
-	delete $^H{'Return::Type::Lexical/wrap_sub_args/coerce_scalar'};
+	delete $^H{'Return::Type::Lexical/coerce'};
+	delete $^H{'Return::Type::Lexical/coerce_list'};
+	delete $^H{'Return::Type::Lexical/coerce_scalar'};
 }
 
 1;
