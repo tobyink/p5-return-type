@@ -13,14 +13,14 @@ sub import {
 	my $class = shift;
 	my (%args) = @_;
 
-	$^H{'Return::Type::Lexical/in_effect'} = exists $args{check} && !$args{check} ? 0 : 1;
+	$^H{'Return::Type::Lexical/check'} = exists $args{check} && !$args{check} ? 0 : 1;
 	$^H{'Return::Type::Lexical/wrap_sub_args/coerce'} = $args{coerce} if defined $args{coerce};
 	$^H{'Return::Type::Lexical/wrap_sub_args/coerce_list'} = $args{coerce_list} if defined $args{coerce_list};
 	$^H{'Return::Type::Lexical/wrap_sub_args/coerce_scalar'} = $args{coerce_scalar} if defined $args{coerce_scalar};
 }
 
 sub unimport {
-	$^H{'Return::Type::Lexical/in_effect'} = 0;
+	delete $^H{'Return::Type::Lexical/check'};
 	delete $^H{'Return::Type::Lexical/wrap_sub_args/coerce'};
 	delete $^H{'Return::Type::Lexical/wrap_sub_args/coerce_list'};
 	delete $^H{'Return::Type::Lexical/wrap_sub_args/coerce_scalar'};
@@ -46,12 +46,14 @@ Return::Type::Lexical - same thing as Return::Type, but lexical
    sub foo :ReturnType(Int) { return "not an int" }
 
    {
-      no Return::Type::Lexical;
+      use Return::Type::Lexical check => 0;
       sub bar :ReturnType(Int) { return "not an int" }
+      sub baz :ReturnType(Int, check => 1) { return "not an int" }
    }
 
    my $foo = foo();    # throws an error
    my $bar = bar();    # returns "not an int"
+   my $baz = baz();    # throws an error
 
    # Can also be used with Devel::StrictMode to only perform
    # type checks in strict mode:

@@ -13,27 +13,54 @@ use Sub::Util qw( subname set_subname );
 use Types::Standard qw( Any ArrayRef HashRef Int );
 use Types::TypeTiny qw( to_TypeTiny );
 
+my %PACKAGE_WRAP_SUB_ARGS;
+sub import {
+	my $class = shift;
+	return if !@_;
+
+	my $package = caller or return;
+	$PACKAGE_WRAP_SUB_ARGS{$package} = {@_};
+}
+
+sub unimport {
+	my $package = caller or return;
+	delete $PACKAGE_WRAP_SUB_ARGS{$package};
+}
+
 sub _find_user_package_level {
-	for (my $i = 2; $i < 10; ++$i) {
+	for (my $i = 1; $i < 10; ++$i) {
 		my ($package) = caller($i);
 		last if !$package;
-		next if $package eq 'attributes' || $package =~ /^Attribute::Handlers/;
+		next if $package eq 'attributes' || $package =~ /^(?:Attribute::Handlers|Return::Type)/;
 
-		return $i - 1;	# ignore current frame
+		return $i - 1;  # ignore current frame
 	}
 }
 
-sub _in_effect {
-	my $level     = _find_user_package_level() or return 1;
-	my $hinthash  = (caller($level))[10];
-	my $in_effect = $hinthash->{'Return::Type::Lexical/in_effect'};
+sub _lexical_check {
+	my $level = shift;
+	defined $level or return 1;
 
-	return !defined $in_effect || $in_effect;
+	my $hinthash  = (caller($level + 1))[10];
+	my $check     = $hinthash->{'Return::Type::Lexical/check'};
+
+	return !defined $check || $check;
+}
+
+sub _package_wrap_sub_args {
+	my $level = shift;
+	defined $level or return {};
+
+	my $package = caller($level + 1);
+
+	return $PACKAGE_WRAP_SUB_ARGS{$package} || {};
 }
 
 sub _lexical_wrap_sub_args {
-	my $level     = _find_user_package_level() or return {};
-	my $hinthash  = (caller($level))[10];
+	my $level = shift;
+	defined $level or return {};
+
+	my $hinthash  = (caller($level + 1))[10];
 
 	my $coerce        = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce'};
 	my $coerce_list   = $hinthash->{'Return::Type::Lexical/wrap_sub_args/coerce_list'};
@@ -81,10 +108,13 @@ sub wrap_sub
 	my $sub   = $_[0];
 	local %_  = @_[ 1 .. $#_ ];
 	
-	return $sub if !_in_effect();
+	my $level = _find_user_package_level();
 
-	my $lexical_args = _lexical_wrap_sub_args();
-	%_ = (%$lexical_args, %_);
+	return $sub if !$_{check} && !_lexical_check($level);
+
+	my $package_args = _package_wrap_sub_args($level);
+	my $lexical_args = _lexical_wrap_sub_args($level);
+	%_ = (%$package_args, %$lexical_args, %_);
 
 	$_{$_}     &&= to_TypeTiny($_{$_}) for qw( list scalar );
 	$_{scalar} ||= Any;
@@ -144,13 +174,15 @@ sub wrap_sub
 
 sub UNIVERSAL::ReturnType :ATTR(CODE,BEGIN)
 {
-	return if !_in_effect();
-
 	my ($package, $symbol, $referent, $attr, $data) = @_;
 	
 	no warnings qw(redefine);
 	my %args = (@$data % 2) ? (scalar => @$data) : @$data;
-	*$symbol = __PACKAGE__->wrap_sub($referent, %args);
+
+	my $level = _find_user_package_level();
+	return if !$args{check} && !_lexical_check($level);
+
+	*$symbol = __PACKAGE__->wrap_sub($referent, %args, check => 1);
 }
 
 1;
@@ -226,6 +258,16 @@ C<< coerce => 1 >>:
 
 The options C<coerce_scalar> and C<coerce_list> are also available if
 you wish to enable coercion only in particular contexts.
+
+To turn these on for all C<:ReturnType> in the current package, use this:
+
+   use Return::Type coerce => 1;
+   # ...
+   sub first_item :ReturnType(scalar => Rounded) {
+      return $_[0];
+   }
+
+This will function the same as the above declaration.
 
 =head2 Power-user Inferface
 
