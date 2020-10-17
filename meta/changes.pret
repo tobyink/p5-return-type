@@ -31,7 +31,7 @@
 	].
 
 `Return-Type 0.006 cpan:TOBYINK`
-	issued  2017-06-23;
+	issued  2020-10-17;
 	changeset [
 		item ":ReturnType(Void) shortcut."^^Addition;
 	].
