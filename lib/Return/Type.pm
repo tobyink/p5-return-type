@@ -110,6 +110,10 @@ my $Void;
 sub UNIVERSAL::ReturnType :ATTR(CODE)
 {
 	my ($package, $symbol, $referent, $attr, $data) = @_;
+	
+	if ( !ref $data ) {
+		$data = [ $data ];
+	}
 
 	if (@$data == 1 and $data->[0] eq 'Void') {
 		$Void ||= Any->complementary_type->create_child_type(name => 'Void');
